@@ -4,9 +4,7 @@ version = "0.1.0"
 description = "WhatsApp Bot for Family & Samaj Data Collection"
 authors = ["Devin"]
 readme = "README.md"
-packages = [
-    { include = "app" }
-]
+packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -21,13 +19,13 @@ python-multipart = "^0.0.6"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.poetry.group.test]
 optional = true
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.0.0"
 httpx = "^0.26.0"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
