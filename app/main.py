@@ -1,9 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.routes import whatsapp, admin, auth
+from app.routes.whatsapp import router as whatsapp_router
+from app.routes.admin import router as admin_router
+from app.routes.auth import router as auth_router
 from app.models.base import Base, engine
 from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 import os
 
 app = FastAPI(title="WhatsApp Bot API")
@@ -18,9 +22,9 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-app.include_router(whatsapp.router, prefix="/api/v1")
-app.include_router(auth.router, prefix="/api/v1/auth")
-app.include_router(admin.router, prefix="/api/v1/admin")
+app.include_router(whatsapp_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1/auth")
+app.include_router(admin_router, prefix="/api/v1/admin")
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")

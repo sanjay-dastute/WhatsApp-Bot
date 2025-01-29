@@ -79,7 +79,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let accessToken = '';
+        let accessToken = localStorage.getItem('accessToken') || '';
         let loginModal;
         const loginBtn = document.getElementById('loginBtn');
         const exportBtn = document.getElementById('exportBtn');
@@ -90,6 +90,7 @@
             
             logoutBtn.addEventListener('click', () => {
                 accessToken = '';
+                localStorage.removeItem('accessToken');
                 loginBtn.style.display = 'inline-block';
                 exportBtn.style.display = 'none';
                 logoutBtn.style.display = 'none';
@@ -113,6 +114,7 @@
                 
                 const data = await response.json();
                 accessToken = data.access_token;
+                localStorage.setItem('accessToken', accessToken);
                 loginBtn.style.display = 'none';
                 exportBtn.style.display = 'inline-block';
                 logoutBtn.style.display = 'inline-block';
