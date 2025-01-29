@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import whatsapp
+from app.routes import whatsapp
 from .models.base import Base, engine
 
 app = FastAPI(title="WhatsApp Bot API")
