@@ -24,6 +24,21 @@ class MemberResponse(BaseModel):
     marital_status: str | None = None
     address: str | None = None
     email: str | None = None
+    birth_date: str | None = None
+    anniversary_date: str | None = None
+    native_place: str | None = None
+    current_city: str | None = None
+    languages_known: str | None = None
+    skills: str | None = None
+    hobbies: str | None = None
+    emergency_contact: str | None = None
+    relationship_status: str | None = None
+    family_role: str | None = None
+    medical_conditions: str | None = None
+    dietary_preferences: str | None = None
+    social_media_handles: str | None = None
+    profession_category: str | None = None
+    volunteer_interests: str | None = None
 
 @router.get("/members", response_model=List[MemberResponse])
 async def get_members(
@@ -70,7 +85,12 @@ async def export_csv(
     
     # Write headers
     headers = ["Name", "Gender", "Age", "Blood Group", "Mobile 1", "Mobile 2",
-               "Education", "Occupation", "Marital Status", "Address", "Email"]
+               "Education", "Occupation", "Marital Status", "Address", "Email",
+               "Birth Date", "Anniversary Date", "Native Place", "Current City",
+               "Languages Known", "Skills", "Hobbies", "Emergency Contact",
+               "Relationship Status", "Family Role", "Medical Conditions",
+               "Dietary Preferences", "Social Media Handles", "Profession Category",
+               "Volunteer Interests"]
     writer.writerow(headers)
     
     # Write data
@@ -79,7 +99,12 @@ async def export_csv(
             member.name, member.gender, member.age, member.blood_group,
             member.mobile_1, member.mobile_2, member.education,
             member.occupation, member.marital_status, member.address,
-            member.email
+            member.email, member.birth_date, member.anniversary_date,
+            member.native_place, member.current_city, member.languages_known,
+            member.skills, member.hobbies, member.emergency_contact,
+            member.relationship_status, member.family_role, member.medical_conditions,
+            member.dietary_preferences, member.social_media_handles,
+            member.profession_category, member.volunteer_interests
         ])
     
     output.seek(0)
