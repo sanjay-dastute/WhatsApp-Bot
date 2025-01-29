@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.routes import whatsapp, admin, auth
 from app.models.base import Base, engine
+from fastapi.responses import FileResponse
 import os
 
 app = FastAPI(title="WhatsApp Bot API")
