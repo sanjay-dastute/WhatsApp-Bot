@@ -1,14 +1,18 @@
 # WhatsApp Bot for Family & Samaj Data Collection
 
-A WhatsApp bot application that collects, stores, and manages family and Samaj-wise information.
+A comprehensive WhatsApp bot system for collecting and managing family and Samaj-wise information, featuring an admin dashboard and secure data management.
 
 ## Features
 
-- WhatsApp integration using Twilio API
-- Data collection through interactive chat
-- PostgreSQL database for data storage
-- FastAPI backend with admin dashboard
-- Docker containerization
+- WhatsApp-based data collection with step-by-step guidance
+- Interactive data collection with validation
+- Review and confirmation steps
+- Secure admin dashboard with JWT authentication
+- CSV export/import functionality
+- PostgreSQL database for reliable data storage
+- Docker containerization for easy deployment
+- CI/CD pipeline with GitHub Actions
+- Comprehensive input validation for all fields
 
 ## Additional Data Fields
 

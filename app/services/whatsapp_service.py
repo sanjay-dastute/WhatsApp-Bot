@@ -101,11 +101,45 @@ class WhatsAppService:
             if not is_valid:
                 return result
             
-            if message.lower() == "skip" and field == "mobile_2":
+            if message.lower() == "skip" and field in ["mobile_2", "anniversary_date", "medical_conditions", "social_media_handles", "volunteer_interests"]:
                 data[field] = None
             else:
                 data[field] = result
-            session["step"] = step + 1
-            return next_prompt
+            
+            if step == 25:  # Last field
+                session["step"] = 26
+                return "Would you like to review your information? (Yes/No)"
+            else:
+                session["step"] = step + 1
+                return next_prompt
 
-        return "Thank you for providing your information! Your data has been saved."
+        if step == 26:
+            if message.lower() == "yes":
+                review = "Please review your information:\n\n"
+                for field, value in data.items():
+                    field_name = field.replace("_", " ").title()
+                    review += f"{field_name}: {value or 'Not provided'}\n"
+                review += "\nIs this information correct? (Yes/No)"
+                session["step"] = 27
+                return review
+            else:
+                session["step"] = 28
+                return "Would you like to save this information? (Yes/No)"
+
+        if step == 27:
+            if message.lower() == "yes":
+                session["step"] = 28
+                return "Would you like to save this information? (Yes/No)"
+            else:
+                self.current_sessions[from_number] = {"step": 0, "data": {}}
+                return "Let's start over. Please enter your Samaj name:"
+
+        if step == 28:
+            if message.lower() == "yes":
+                del self.current_sessions[from_number]
+                return "Thank you! Your information has been saved successfully."
+            else:
+                self.current_sessions[from_number] = {"step": 0, "data": {}}
+                return "Information discarded. Let's start over. Please enter your Samaj name:"
+
+        return "Invalid input. Please try again."
