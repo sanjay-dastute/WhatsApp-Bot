@@ -22,15 +22,19 @@ class WhatsAppService:
 
     def validate_input(self, field: str, value: str) -> tuple[bool, str]:
         validations = {
+            "name": lambda x: len(x.strip()) >= 2,
             "gender": lambda x: x.lower() in ["male", "female", "other"],
             "age": lambda x: x.isdigit() and 0 <= int(x) <= 120,
             "blood_group": lambda x: x.upper() in ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
-            "mobile_1": lambda x: x.isdigit() and len(x) == 10,
-            "mobile_2": lambda x: x.isdigit() and len(x) == 10 if x.lower() != "skip" else True,
+            "mobile_1": lambda x: x.startswith("+") and x[1:].isdigit() and len(x) >= 10,
+            "mobile_2": lambda x: (x.startswith("+") and x[1:].isdigit() and len(x) >= 10) if x.lower() != "skip" else True,
             "email": lambda x: "@" in x and "." in x.split("@")[1],
-            "birth_date": lambda x: len(x.split("/")) == 3,
-            "anniversary_date": lambda x: len(x.split("/")) == 3 if x.lower() != "skip" else True,
-            "emergency_contact": lambda x: x.isdigit() and len(x) == 10
+            "birth_date": lambda x: len(x.split("-")) == 3,
+            "anniversary_date": lambda x: len(x.split("-")) == 3 if x.lower() != "skip" else True,
+            "emergency_contact": lambda x: x.startswith("+") and x[1:].isdigit() and len(x) >= 10,
+            "medical_conditions": lambda x: True if x.lower() != "skip" else True,
+            "social_media_handles": lambda x: True if x.lower() != "skip" else True,
+            "volunteer_interests": lambda x: True if x.lower() != "skip" else True
         }
         
         if field not in validations:
@@ -38,15 +42,16 @@ class WhatsAppService:
             
         is_valid = validations[field](value)
         error_messages = {
+            "name": "Name must be at least 2 characters long",
             "gender": "Please enter Male, Female, or Other",
             "age": "Please enter a valid age between 0 and 120",
             "blood_group": "Please enter a valid blood group (A+, A-, B+, B-, AB+, AB-, O+, O-)",
-            "mobile_1": "Please enter a valid 10-digit mobile number",
-            "mobile_2": "Please enter a valid 10-digit mobile number or type 'skip'",
+            "mobile_1": "Please enter number with country code (e.g., +1234567890)",
+            "mobile_2": "Please enter number with country code (e.g., +1234567890) or type 'skip'",
             "email": "Please enter a valid email address",
-            "birth_date": "Please enter date in DD/MM/YYYY format",
-            "anniversary_date": "Please enter date in DD/MM/YYYY format or type 'skip'",
-            "emergency_contact": "Please enter a valid 10-digit contact number"
+            "birth_date": "Please enter date in YYYY-MM-DD format",
+            "anniversary_date": "Please enter date in YYYY-MM-DD format or type 'skip'",
+            "emergency_contact": "Please enter number with country code (e.g., +1234567890)"
         }
         
         return is_valid, error_messages[field] if not is_valid else value
