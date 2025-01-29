@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family & Samaj Data Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Family & Samaj Data Management</h1>
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Filter by Samaj</h5>
+                        <select id="samajSelect" class="form-select">
+                            <option value="">All Samaj</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Gender</th>
+                                <th>Age</th>
+                                <th>Blood Group</th>
+                                <th>Mobile</th>
+                                <th>Education</th>
+                                <th>Occupation</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membersList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadSamajList() {
+            const response = await fetch('/api/v1/admin/samaj');
+            const samajList = await response.json();
+            const select = document.getElementById('samajSelect');
+            samajList.forEach(samaj => {
+                const option = document.createElement('option');
+                option.value = samaj.name;
+                option.textContent = samaj.name;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadMembers(samajName = '') {
+            const url = samajName 
+                ? `/api/v1/admin/members?samaj_name=${encodeURIComponent(samajName)}`
+                : '/api/v1/admin/members';
+            const response = await fetch(url);
+            const members = await response.json();
+            const tbody = document.getElementById('membersList');
+            tbody.innerHTML = '';
+            
+            members.forEach(member => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${member.name}</td>
+                    <td>${member.gender}</td>
+                    <td>${member.age}</td>
+                    <td>${member.blood_group}</td>
+                    <td>${member.mobile_1}</td>
+                    <td>${member.education || '-'}</td>
+                    <td>${member.occupation || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="viewMember(${member.id})">View</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function viewMember(id) {
+            const response = await fetch(`/api/v1/admin/members/${id}`);
+            const member = await response.json();
+            alert(JSON.stringify(member, null, 2));
+        }
+
+        document.getElementById('samajSelect').addEventListener('change', (e) => {
+            loadMembers(e.target.value);
+        });
+
+        // Initial load
+        loadSamajList();
+        loadMembers();
+    </script>
+</body>
+</html>
