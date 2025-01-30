@@ -10,7 +10,8 @@ class Family(db.Model):
     name = db.Column(db.String(100), nullable=False)
     samaj_id = db.Column(db.Integer, db.ForeignKey("samaj.id", ondelete="CASCADE"), nullable=False)
     head_of_family_id = db.Column(db.Integer, db.ForeignKey("member.id", ondelete="SET NULL"), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     members = relationship("Member", back_populates="family", foreign_keys="Member.family_id")
     samaj = relationship("Samaj", back_populates="families")
 
@@ -18,7 +19,8 @@ class Samaj(db.Model):
     __tablename__ = "samaj"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     families = relationship("Family", back_populates="samaj", cascade="all, delete-orphan")
     members = relationship("Member", back_populates="samaj", cascade="all, delete-orphan")
 
