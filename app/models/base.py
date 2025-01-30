@@ -1,3 +1,4 @@
+# Author: SANJAY KR
 from .. import db
 
 def init_db():

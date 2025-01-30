@@ -1,3 +1,4 @@
+# Author: SANJAY KR
 from .. import db
 from sqlalchemy.orm import relationship
 
