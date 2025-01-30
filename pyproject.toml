@@ -2,7 +2,7 @@
 name = "whatsapp-bot"
 version = "0.1.0"
 description = "WhatsApp Bot for Family & Samaj Data Collection"
-authors = ["Devin"]
+authors = ["SANJAY KR"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -23,6 +23,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.packages]
-[[tool.poetry.packages]]
-include = "app"
-from = "."
+include = ["app"]
