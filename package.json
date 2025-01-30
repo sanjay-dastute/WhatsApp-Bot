@@ -1,0 +1,10 @@
+{
+  "name": "whatsapp-bot",
+  "version": "1.0.0",
+  "author": "SANJAY KR",
+  "description": "WhatsApp Bot for Family & Samaj Data Collection",
+  "scripts": {
+    "start": "echo 'Start script placeholder for container or future frontend build'",
+    "test": "echo 'Test script placeholder for container or future frontend tests'"
+  }
+}
