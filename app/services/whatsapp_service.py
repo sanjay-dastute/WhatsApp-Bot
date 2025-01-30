@@ -37,6 +37,7 @@ class WhatsAppService:
             return False
 
     def validate_input(self, field: str, value: str) -> tuple[bool, str]:
+        current_app.logger.debug(f"Validating field '{field}' with value '{value}'")
         validations = {
             "gender": lambda x: x.lower() in ["male", "female", "other"],
             "age": lambda x: x.isdigit() and 0 <= int(x) <= 120,
@@ -68,14 +69,17 @@ class WhatsAppService:
         return is_valid, error_messages[field] if not is_valid else value
 
     def handle_message(self, from_number: str, message: str) -> Tuple[str, bool]:
+        current_app.logger.info(f"Processing message from {from_number}: {message}")
         if message.lower() == "start":
             self.current_sessions[from_number] = {
                 "step": 0,
                 "data": {}
             }
+            current_app.logger.info(f"Started new session for {from_number}")
             return "Welcome to Family & Samaj Data Collection Bot!\nPlease enter your Samaj name:", True
 
         if from_number not in self.current_sessions:
+            current_app.logger.warning(f"No active session for {from_number}")
             return "Please send 'Start' to begin the data collection process.", True
 
         session = self.current_sessions[from_number]
@@ -115,13 +119,17 @@ class WhatsAppService:
             field, next_prompt = steps[step]
             is_valid, result = self.validate_input(field, message)
             if not is_valid:
+                current_app.logger.warning(f"Invalid input for field '{field}' from {from_number}: {message}")
                 return result, True
             
             if message.lower() == "skip" and field == "mobile_2":
                 data[field] = None
+                current_app.logger.info(f"User {from_number} skipped optional field '{field}'")
             else:
                 data[field] = result
+                current_app.logger.info(f"User {from_number} provided valid input for '{field}': {result}")
             session["step"] = step + 1
+            current_app.logger.info(f"Advanced session for {from_number} to step {step + 1}")
             return next_prompt, True
 
         try:
