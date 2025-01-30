@@ -9,6 +9,9 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/whatsapp_bot
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - FLASK_APP=app.main
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
     depends_on:
       - db
     volumes:

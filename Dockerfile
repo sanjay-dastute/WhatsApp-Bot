@@ -9,4 +9,8 @@ RUN pip install poetry && \
 
 COPY . .
 
-CMD ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENV FLASK_APP=app.main
+ENV FLASK_ENV=production
+ENV PYTHONPATH=/app
+
+CMD ["poetry", "run", "flask", "run", "--host=0.0.0.0", "--port=8000"]
