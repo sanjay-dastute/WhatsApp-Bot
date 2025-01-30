@@ -10,11 +10,20 @@ whatsapp_bp = Blueprint("whatsapp", __name__)
 def webhook():
     db = get_db()
     try:
+        request_data = request.form
+        if 'NumMedia' in request_data and int(request_data['NumMedia']) > 0:
+            return jsonify({
+                "success": False,
+                "message": "Media attachments are not supported. Please send text messages only."
+            }), 400
+            
+        # Extract phone number from Twilio format
+        phone_number = request_data["From"].split(":")[-1].strip()
         response, success = handle_webhook(
-            phone_number=request.form["From"],
-            message=request.form["Body"],
+            phone_number=phone_number,
+            message=request_data["Body"],
             db=db
         )
-        return jsonify({"success": success})
+        return jsonify({"success": success, "message": response})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

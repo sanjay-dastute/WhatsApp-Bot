@@ -213,6 +213,13 @@ def create_app():
             app.logger.error(f"Error during database initialization: {str(e)}")
             raise
     
+    # Initialize WhatsApp service before routes
+    from .services.whatsapp_service import WhatsAppService, get_whatsapp_service
+    
+    # Initialize service in app context
+    with app.app_context():
+        get_whatsapp_service()
+    
     from .routes.whatsapp import whatsapp_bp
     from .routes.admin import admin_bp
     from .routes.auth import auth_bp

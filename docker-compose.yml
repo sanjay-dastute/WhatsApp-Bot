@@ -7,14 +7,14 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/whatsapp_bot
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      JWT_ALGORITHM: ${JWT_ALGORITHM}
-      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES}
-      ADMIN_USERNAME: ${ADMIN_USERNAME}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      JWT_SECRET_KEY: development-secret-key-do-not-use-in-production
+      JWT_ALGORITHM: HS256
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin
       FLASK_APP: app.main
       FLASK_ENV: development
       FLASK_DEBUG: 1
