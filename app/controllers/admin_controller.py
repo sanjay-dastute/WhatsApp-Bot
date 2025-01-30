@@ -1,7 +1,9 @@
 # Author: SANJAY KR
 from sqlalchemy.orm import Session
-from ..models.family import Samaj, Member
+from ..models.family import Samaj, Member, Family
+from typing import List, Optional
 import csv
+from io import StringIO
 from io import StringIO
 from typing import List, Optional
 
@@ -85,11 +87,12 @@ def get_member(db: Session, member_id: int) -> Optional[Member]:
 
 def export_members_csv(db: Session, filters: dict = None) -> tuple[str, str]:
     members = get_members(db, filters)
+    samaj_name = filters.get("samaj_name", "all") if filters else "all"
     
     output = StringIO()
     writer = csv.writer(output)
     
-    headers = ["Name", "Gender", "Age", "Blood Group", "Mobile 1", "Mobile 2",
+    headers = ["Samaj", "Family", "Name", "Gender", "Age", "Blood Group", "Mobile 1", "Mobile 2",
                "Education", "Occupation", "Marital Status", "Address", "Email",
                "Birth Date", "Anniversary Date", "Native Place", "Current City",
                "Languages Known", "Skills", "Hobbies", "Emergency Contact",
@@ -100,6 +103,7 @@ def export_members_csv(db: Session, filters: dict = None) -> tuple[str, str]:
     
     for member in members:
         writer.writerow([
+            member.samaj.name, member.family.name,
             member.name, member.gender, member.age, member.blood_group,
             member.mobile_1, member.mobile_2, member.education,
             member.occupation, member.marital_status, member.address,
@@ -112,5 +116,5 @@ def export_members_csv(db: Session, filters: dict = None) -> tuple[str, str]:
         ])
     
     output.seek(0)
-    filename = f"members_{samaj_name or 'all'}.csv"
+    filename = f"members_{samaj_name}.csv"
     return output.getvalue(), filename
