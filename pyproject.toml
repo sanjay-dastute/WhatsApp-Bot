@@ -23,4 +23,6 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.packages]
-include = ["app"]
+packages = [
+    { include = "app" }
+]
