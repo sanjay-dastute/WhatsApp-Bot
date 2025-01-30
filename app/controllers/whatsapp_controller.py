@@ -1,16 +1,24 @@
 # Author: SANJAY KR
 from sqlalchemy.orm import Session
+from flask import current_app
 from ..models.family import Samaj, Member
 from ..services.whatsapp_service import WhatsAppService
+from twilio.base.exceptions import TwilioRestException
 
 whatsapp_service = WhatsAppService()
 
 def handle_webhook(phone_number: str, message: str, db: Session):
-    phone_number = phone_number.replace("whatsapp:", "")
-    response = whatsapp_service.handle_message(phone_number, message)
-    
-    session = whatsapp_service.current_sessions.get(phone_number)
-    if session and session["step"] >= 26:
+    try:
+        current_app.logger.info(f"Received webhook for {phone_number}: {message}")
+        phone_number = phone_number.replace("whatsapp:", "")
+        response, success = whatsapp_service.handle_message(phone_number, message)
+        
+        if not success:
+            current_app.logger.error(f"Failed to process message for {phone_number}")
+            return response, False
+        
+        session = whatsapp_service.current_sessions.get(phone_number)
+        if session and session["step"] >= 26:
         try:
             data = session["data"]
             samaj = db.query(Samaj).filter(Samaj.name == data["samaj"]).first()
@@ -51,10 +59,22 @@ def handle_webhook(phone_number: str, message: str, db: Session):
             db.add(member)
             db.commit()
             del whatsapp_service.current_sessions[phone_number]
+            current_app.logger.info(f"Successfully saved data for {phone_number}")
             return response, True
         except Exception as e:
+            current_app.logger.error(f"Database error for {phone_number}: {str(e)}")
             db.rollback()
-            raise e
+            return "An error occurred while saving your information. Please try again.", False
     
-    whatsapp_service.send_message(phone_number, response)
-    return response, True
+    try:
+        if not whatsapp_service.send_message(phone_number, response):
+            current_app.logger.error(f"Failed to send WhatsApp message to {phone_number}")
+            return "Failed to send response message", False
+        current_app.logger.info(f"Successfully sent message to {phone_number}")
+        return response, True
+    except TwilioRestException as e:
+        current_app.logger.error(f"Twilio error for {phone_number}: {str(e)}")
+        return "Failed to send response message", False
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error for {phone_number}: {str(e)}")
+        return "An unexpected error occurred", False

@@ -1,25 +1,40 @@
 # Author: SANJAY KR
 from twilio.rest import Client
+from twilio.base.exceptions import TwilioRestException
+from flask import current_app
 import os
 from dotenv import load_dotenv
-from typing import Dict, Any
+from typing import Dict, Any, Tuple, Optional
 
 load_dotenv()
 
 class WhatsAppService:
     def __init__(self):
-        self.client = Client(
-            os.getenv("TWILIO_ACCOUNT_SID"),
-            os.getenv("TWILIO_AUTH_TOKEN")
-        )
-        self.current_sessions: Dict[str, Dict[str, Any]] = {}
+        try:
+            account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+            auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+            
+            if not account_sid or not auth_token:
+                raise ValueError("Twilio credentials not properly configured")
+                
+            self.client = Client(account_sid, auth_token)
+            self.current_sessions: Dict[str, Dict[str, Any]] = {}
+            current_app.logger.info("WhatsApp service initialized successfully")
+        except Exception as e:
+            current_app.logger.error(f"Failed to initialize WhatsApp service: {str(e)}")
+            raise
 
-    def send_message(self, to: str, message: str) -> None:
-        self.client.messages.create(
-            from_="whatsapp:+14155238886",
-            body=message,
-            to=f"whatsapp:{to}"
-        )
+    def send_message(self, to: str, message: str) -> bool:
+        try:
+            self.client.messages.create(
+                from_="whatsapp:+14155238886",
+                body=message,
+                to=f"whatsapp:{to}"
+            )
+            return True
+        except Exception as e:
+            current_app.logger.error(f"Failed to send WhatsApp message: {str(e)}")
+            return False
 
     def validate_input(self, field: str, value: str) -> tuple[bool, str]:
         validations = {
@@ -52,16 +67,16 @@ class WhatsAppService:
         
         return is_valid, error_messages[field] if not is_valid else value
 
-    def handle_message(self, from_number: str, message: str) -> str:
+    def handle_message(self, from_number: str, message: str) -> Tuple[str, bool]:
         if message.lower() == "start":
             self.current_sessions[from_number] = {
                 "step": 0,
                 "data": {}
             }
-            return "Welcome to Family & Samaj Data Collection Bot!\nPlease enter your Samaj name:"
+            return "Welcome to Family & Samaj Data Collection Bot!\nPlease enter your Samaj name:", True
 
         if from_number not in self.current_sessions:
-            return "Please send 'Start' to begin the data collection process."
+            return "Please send 'Start' to begin the data collection process.", True
 
         session = self.current_sessions[from_number]
         step = session["step"]
@@ -100,13 +115,20 @@ class WhatsAppService:
             field, next_prompt = steps[step]
             is_valid, result = self.validate_input(field, message)
             if not is_valid:
-                return result
+                return result, True
             
             if message.lower() == "skip" and field == "mobile_2":
                 data[field] = None
             else:
                 data[field] = result
             session["step"] = step + 1
-            return next_prompt
+            return next_prompt, True
 
-        return "Thank you for providing your information! Your data has been saved."
+        try:
+            # Here we would typically save the data to the database
+            current_app.logger.info(f"Completed data collection for user {from_number}")
+            del self.current_sessions[from_number]
+            return "Thank you for providing your information! Your data has been saved.", True
+        except Exception as e:
+            current_app.logger.error(f"Failed to save user data: {str(e)}")
+            return "An error occurred while saving your information. Please try again later.", False
