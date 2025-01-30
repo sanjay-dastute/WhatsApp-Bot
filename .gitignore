@@ -27,3 +27,11 @@ ENV/
 *.swp
 .DS_Store
 .env
+# Generated files
+*.csv
+token.txt
+token_response.json
+recording_pid.txt
+screenshots/
+*.mp4
+*.gif
