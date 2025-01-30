@@ -6,6 +6,8 @@ from ..services.whatsapp_service import WhatsAppService
 from twilio.base.exceptions import TwilioRestException
 
 whatsapp_service = WhatsAppService()
+from flask import current_app
+whatsapp_service.init_app(current_app._get_current_object())
 
 def handle_webhook(phone_number: str, message: str, db: Session):
     try:

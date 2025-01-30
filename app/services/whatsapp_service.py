@@ -10,18 +10,22 @@ load_dotenv()
 
 class WhatsAppService:
     def __init__(self):
+        self.current_sessions: Dict[str, Dict[str, Any]] = {}
+        self.client = None
+        
+    def init_app(self, app):
         try:
             account_sid = os.getenv("TWILIO_ACCOUNT_SID")
             auth_token = os.getenv("TWILIO_AUTH_TOKEN")
             
             if not account_sid or not auth_token:
+                app.logger.error("Twilio credentials not properly configured")
                 raise ValueError("Twilio credentials not properly configured")
                 
             self.client = Client(account_sid, auth_token)
-            self.current_sessions: Dict[str, Dict[str, Any]] = {}
-            current_app.logger.info("WhatsApp service initialized successfully")
+            app.logger.info("WhatsApp service initialized successfully")
         except Exception as e:
-            current_app.logger.error(f"Failed to initialize WhatsApp service: {str(e)}")
+            app.logger.error(f"Failed to initialize WhatsApp service: {str(e)}")
             raise
 
     def send_message(self, to: str, message: str) -> bool:
