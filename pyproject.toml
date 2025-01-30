@@ -5,9 +5,8 @@ description = "WhatsApp Bot for Family & Samaj Data Collection"
 authors = ["SANJAY KR"]
 readme = "README.md"
 packages = [
-    { include = "app" }
+    {include = "app"}
 ]
-include = ["app/**/*"]
 
 [tool.poetry.dependencies]
 python = "^3.12"
