@@ -31,6 +31,47 @@
             </div>
         </div>
         <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Analytics Overview</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-2 text-muted">Total Members</h6>
+                                        <p id="totalMembers" class="h3">0</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-2 text-muted">Gender Distribution</h6>
+                                        <div id="genderDistribution"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-2 text-muted">Age Groups</h6>
+                                        <div id="ageGroups"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-2 text-muted">Professions</h6>
+                                        <div id="professionCategories"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="col-12">
                 <div class="table-responsive">
                     <table class="table table-striped">
@@ -121,6 +162,7 @@
                 loginModal.hide();
                 loadSamajList();
                 loadMembers();
+                loadAnalytics();
             } catch (error) {
                 alert('Login failed. Please try again.');
             }
@@ -144,6 +186,40 @@
                 });
             } catch (error) {
                 console.error('Error loading Samaj list:', error);
+            }
+        }
+
+        async function loadAnalytics() {
+            try {
+                const response = await fetch('/api/v1/admin/analytics', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                if (!response.ok) throw new Error('Failed to load analytics');
+                
+                const data = await response.json();
+                
+                // Update total members
+                document.getElementById('totalMembers').textContent = data.total_members;
+                
+                // Update gender distribution
+                const genderHtml = Object.entries(data.gender_distribution)
+                    .map(([gender, count]) => `<div>${gender}: ${count}</div>`)
+                    .join('');
+                document.getElementById('genderDistribution').innerHTML = genderHtml;
+                
+                // Update age groups
+                const ageHtml = Object.entries(data.age_groups)
+                    .map(([group, count]) => `<div>${group}: ${count}</div>`)
+                    .join('');
+                document.getElementById('ageGroups').innerHTML = ageHtml;
+                
+                // Update profession categories
+                const professionHtml = Object.entries(data.profession_categories)
+                    .map(([category, count]) => `<div>${category}: ${count}</div>`)
+                    .join('');
+                document.getElementById('professionCategories').innerHTML = professionHtml;
+            } catch (error) {
+                console.error('Error loading analytics:', error);
             }
         }
 

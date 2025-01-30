@@ -141,8 +141,54 @@ class WhatsAppService:
 
         if step == 28:
             if message.lower() == "yes":
-                del self.current_sessions[from_number]
-                return "Thank you! Your information has been saved successfully."
+                try:
+                    from ..models.family import Samaj, Member
+                    from ..models.base import get_db
+                    db = next(get_db())
+                    
+                    # Get or create Samaj
+                    samaj = db.query(Samaj).filter(Samaj.name == data["samaj"]).first()
+                    if not samaj:
+                        samaj = Samaj(name=data["samaj"])
+                        db.add(samaj)
+                        db.flush()
+                    
+                    # Create Member
+                    member = Member(
+                        samaj_id=samaj.id,
+                        name=data["name"],
+                        gender=data["gender"],
+                        age=int(data["age"]),
+                        blood_group=data["blood_group"],
+                        mobile_1=data["mobile_1"],
+                        mobile_2=data.get("mobile_2"),
+                        education=data.get("education"),
+                        occupation=data.get("occupation"),
+                        marital_status=data.get("marital_status"),
+                        address=data.get("address"),
+                        email=data.get("email"),
+                        birth_date=data.get("birth_date"),
+                        anniversary_date=data.get("anniversary_date"),
+                        native_place=data.get("native_place"),
+                        current_city=data.get("current_city"),
+                        languages_known=data.get("languages_known"),
+                        skills=data.get("skills"),
+                        hobbies=data.get("hobbies"),
+                        emergency_contact=data.get("emergency_contact"),
+                        relationship_status=data.get("relationship_status"),
+                        family_role=data.get("family_role"),
+                        medical_conditions=data.get("medical_conditions"),
+                        dietary_preferences=data.get("dietary_preferences"),
+                        social_media_handles=data.get("social_media_handles"),
+                        profession_category=data.get("profession_category"),
+                        volunteer_interests=data.get("volunteer_interests")
+                    )
+                    db.add(member)
+                    db.commit()
+                    del self.current_sessions[from_number]
+                    return "Thank you! Your information has been saved successfully."
+                except Exception as e:
+                    return "Sorry, there was an error saving your information. Please try again later."
             else:
                 self.current_sessions[from_number] = {"step": 0, "data": {}}
                 return "Information discarded. Let's start over. Please enter your Samaj name:"
