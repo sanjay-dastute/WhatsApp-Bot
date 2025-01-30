@@ -1,43 +1,43 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+# Author: SANJAY KR
+from .. import db
 from sqlalchemy.orm import relationship
-from .base import Base
 
-class Samaj(Base):
+class Samaj(db.Model):
     __tablename__ = "samaj"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    name = db.Column(db.String, unique=True, index=True)
     members = relationship("Member", back_populates="samaj")
 
-class Member(Base):
+class Member(db.Model):
     __tablename__ = "members"
-    id = Column(Integer, primary_key=True, index=True)
-    samaj_id = Column(Integer, ForeignKey("samaj.id"))
-    name = Column(String)
-    gender = Column(String)
-    age = Column(Integer)
-    blood_group = Column(String)
-    mobile_1 = Column(String)
-    mobile_2 = Column(String, nullable=True)
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    samaj_id = db.Column(db.Integer, db.ForeignKey("samaj.id"))
+    name = db.Column(db.String)
+    gender = db.Column(db.String)
+    age = db.Column(db.Integer)
+    blood_group = db.Column(db.String)
+    mobile_1 = db.Column(db.String)
+    mobile_2 = db.Column(db.String, nullable=True)
     
-    education = Column(String, nullable=True)
-    occupation = Column(String, nullable=True)
-    marital_status = Column(String, nullable=True)
-    address = Column(String, nullable=True)
-    email = Column(String, nullable=True)
-    birth_date = Column(String, nullable=True)
-    anniversary_date = Column(String, nullable=True)
-    native_place = Column(String, nullable=True)
-    current_city = Column(String, nullable=True)
-    languages_known = Column(String, nullable=True)
-    skills = Column(String, nullable=True)
-    hobbies = Column(String, nullable=True)
-    emergency_contact = Column(String, nullable=True)
-    relationship_status = Column(String, nullable=True)
-    family_role = Column(String, nullable=True)
-    medical_conditions = Column(String, nullable=True)
-    dietary_preferences = Column(String, nullable=True)
-    social_media_handles = Column(String, nullable=True)
-    profession_category = Column(String, nullable=True)
-    volunteer_interests = Column(String, nullable=True)
+    education = db.Column(db.String, nullable=True)
+    occupation = db.Column(db.String, nullable=True)
+    marital_status = db.Column(db.String, nullable=True)
+    address = db.Column(db.String, nullable=True)
+    email = db.Column(db.String, nullable=True)
+    birth_date = db.Column(db.String, nullable=True)
+    anniversary_date = db.Column(db.String, nullable=True)
+    native_place = db.Column(db.String, nullable=True)
+    current_city = db.Column(db.String, nullable=True)
+    languages_known = db.Column(db.String, nullable=True)
+    skills = db.Column(db.String, nullable=True)
+    hobbies = db.Column(db.String, nullable=True)
+    emergency_contact = db.Column(db.String, nullable=True)
+    relationship_status = db.Column(db.String, nullable=True)
+    family_role = db.Column(db.String, nullable=True)
+    medical_conditions = db.Column(db.String, nullable=True)
+    dietary_preferences = db.Column(db.String, nullable=True)
+    social_media_handles = db.Column(db.String, nullable=True)
+    profession_category = db.Column(db.String, nullable=True)
+    volunteer_interests = db.Column(db.String, nullable=True)
 
     samaj = relationship("Samaj", back_populates="members")

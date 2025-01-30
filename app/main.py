@@ -1,31 +1,23 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from app.routes import whatsapp, admin, auth
-from app.models.base import Base, engine
-from fastapi.responses import FileResponse
-import os
+# Author: SANJAY KR
+from flask import Flask
+from flask_cors import CORS
+from .routes.whatsapp import whatsapp_bp
+from .routes.admin import admin_bp
+from .routes.auth import auth_bp
+from .models.base import init_db
 
-app = FastAPI(title="WhatsApp Bot API")
+def create_app():
+    app = Flask(__name__)
+    CORS(app)
+    
+    # Register blueprints
+    app.register_blueprint(whatsapp_bp, url_prefix="/api/v1")
+    app.register_blueprint(admin_bp, url_prefix="/api/v1/admin")
+    app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
+    
+    return app
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-Base.metadata.create_all(bind=engine)
-
-app.include_router(whatsapp.router, prefix="/api/v1")
-app.include_router(auth.router, prefix="/api/v1/auth")
-app.include_router(admin.router, prefix="/api/v1/admin")
-
-# Mount static files
-static_dir = os.path.join(os.path.dirname(__file__), "static")
-app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+app = create_app()
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8000)
