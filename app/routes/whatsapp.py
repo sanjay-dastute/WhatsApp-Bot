@@ -8,7 +8,7 @@ whatsapp_bp = Blueprint("whatsapp", __name__)
 
 @whatsapp_bp.route("/webhook", methods=["POST"])
 def webhook():
-    db = next(get_db())
+    db = get_db()
     try:
         response, success = handle_webhook(
             phone_number=request.form["From"],

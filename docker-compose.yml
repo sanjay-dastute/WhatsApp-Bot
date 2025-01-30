@@ -7,16 +7,28 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/whatsapp_bot
-      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
-      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
-      - FLASK_APP=app.main
-      - FLASK_ENV=production
-      - PYTHONPATH=/app
+      DATABASE_URL: ${DATABASE_URL}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      FLASK_APP: app.main
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+      PYTHONPATH: /app
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - .:/app
+    command: >
+      bash -c "
+        python scripts/init_db.py &&
+        python -m flask run --host=0.0.0.0 --port=8000
+      "
 
   db:
     image: postgres:13
@@ -28,6 +40,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
