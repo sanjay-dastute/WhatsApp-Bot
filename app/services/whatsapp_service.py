@@ -1,7 +1,7 @@
 # Author: SANJAY KR
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
-from flask import current_app
+from flask import current_app, has_app_context, Flask
 import os
 from dotenv import load_dotenv
 from typing import Dict, Any, Tuple, Optional
@@ -11,10 +11,16 @@ load_dotenv()
 _instance = None
 
 def get_whatsapp_service():
-    global _instance
-    if _instance is None:
-        raise RuntimeError("WhatsApp service not initialized")
-    return _instance
+    if not has_app_context():
+        raise RuntimeError("No Flask application context")
+    
+    app = current_app._get_current_object()
+    if not hasattr(app, 'extensions'):
+        app.extensions = {}
+    if 'whatsapp_service' not in app.extensions:
+        service = WhatsAppService()
+        service.init_app(app)
+    return app.extensions['whatsapp_service']
 
 class WhatsAppService:
     def __init__(self):
@@ -30,6 +36,10 @@ class WhatsAppService:
         
     def init_app(self, app):
         try:
+            # Check if service is already initialized
+            if hasattr(app, 'extensions') and 'whatsapp_service' in app.extensions:
+                return app.extensions['whatsapp_service']
+                
             account_sid = os.getenv("TWILIO_ACCOUNT_SID")
             auth_token = os.getenv("TWILIO_AUTH_TOKEN")
             
@@ -38,8 +48,12 @@ class WhatsAppService:
                 raise ValueError("Twilio credentials not properly configured")
                 
             self.client = Client(account_sid, auth_token)
-            global _instance
-            _instance = self
+            
+            # Store instance in app context
+            if not hasattr(app, 'extensions'):
+                app.extensions = {}
+            app.extensions['whatsapp_service'] = self
+            
             app.logger.info("WhatsApp service initialized successfully")
             return self
         except Exception as e:
@@ -52,14 +66,33 @@ class WhatsAppService:
                 current_app.logger.error("Twilio client not initialized")
                 return False
                 
+            system_number = os.getenv("TWILIO_PHONE_NUMBER", "whatsapp:+14155238886")
+            
+            # Clean up the destination number
+            to_number = to.strip().replace(" ", "").replace("whatsapp:", "")
+            if not to_number.startswith("+"):
+                to_number = "+" + to_number
+                
+            # Validate number format (must be E.164 format)
+            if not to_number.startswith("+") or not to_number[1:].isdigit():
+                current_app.logger.error(f"Invalid phone number format: {to_number}")
+                return False
+                
+            if to_number == system_number.replace("whatsapp:", ""):
+                current_app.logger.error(f"Cannot send message to system number: {to_number}")
+                return False
+                
             self.client.messages.create(
-                from_=os.getenv("TWILIO_PHONE_NUMBER", "whatsapp:+14155238886"),
+                from_=system_number,
                 body=message,
-                to=f"whatsapp:{to}"
+                to=f"whatsapp:{to_number}"
             )
-            current_app.logger.info(f"Successfully sent message to {to}")
+            current_app.logger.info(f"Successfully sent message to {to_number}")
             return True
         except TwilioRestException as e:
+            if "same To and From" in str(e):
+                current_app.logger.error(f"Cannot send message to system number: {to_number}")
+                return False
             current_app.logger.error(f"Twilio API error: {str(e)}")
             return False
         except Exception as e:
@@ -99,22 +132,46 @@ class WhatsAppService:
         return is_valid, error_messages[field] if not is_valid else value
 
     def handle_message(self, from_number: str, message: str) -> Tuple[str, bool]:
-        current_app.logger.info(f"Processing message from {from_number}: {message}")
-        if message.lower() == "start":
-            self.current_sessions[from_number] = {
-                "step": 0,
-                "data": {}
-            }
-            current_app.logger.info(f"Started new session for {from_number}")
-            return "Welcome to Family & Samaj Data Collection Bot!\nPlease enter your Samaj name:", True
+        try:
+            # Extract and format phone number
+            phone_number = from_number.split(":")[-1].strip()
+            if not phone_number.startswith("+"):
+                phone_number = "+" + phone_number
+                
+            current_app.logger.info(f"Processing message from {phone_number}: {message}")
+            
+            if not self.client:
+                current_app.logger.error("Twilio client not initialized")
+                return "Service temporarily unavailable. Please try again later.", False
+                
+            # Check if this is the system number
+            system_number = os.getenv("TWILIO_PHONE_NUMBER", "whatsapp:+14155238886").replace("whatsapp:", "")
+            if phone_number == system_number:
+                current_app.logger.error(f"Cannot process messages from system number: {phone_number}")
+                return "Cannot process messages from the system number.", False
+                
+            if message.lower() == "start":
+                self.current_sessions[phone_number] = {
+                    "step": 0,
+                    "data": {}
+                }
+                current_app.logger.info(f"Started new session for {phone_number}")
+                return "Welcome to Family & Samaj Data Collection Bot!\nPlease enter your Samaj name:", True
+                
+            if from_number not in self.current_sessions:
+                current_app.logger.warning(f"No active session for {from_number}")
+                return "Please send 'Start' to begin the data collection process.", True
+        except Exception as e:
+            current_app.logger.error(f"Error processing message: {str(e)}")
+            return "An error occurred. Please try again.", False
 
-        if from_number not in self.current_sessions:
-            current_app.logger.warning(f"No active session for {from_number}")
-            return "Please send 'Start' to begin the data collection process.", True
-
-        session = self.current_sessions[from_number]
-        step = session["step"]
-        data = session["data"]
+        try:
+            session = self.current_sessions[from_number]
+            step = session["step"]
+            data = session["data"]
+        except Exception as e:
+            current_app.logger.error(f"Error accessing session data for {from_number}: {str(e)}")
+            return "An error occurred. Please try again by sending 'Start'.", False
 
         steps = {
             0: ("samaj", "Please enter your full name:"),

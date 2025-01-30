@@ -1,21 +1,56 @@
 # Author: SANJAY KR
+import os
 from sqlalchemy.orm import Session
 from flask import current_app
 from ..models.family import Samaj, Member
-from ..services.whatsapp_service import WhatsAppService
+from ..services.whatsapp_service import get_whatsapp_service
 from twilio.base.exceptions import TwilioRestException
 
-from flask import current_app
-from ..services.whatsapp_service import get_whatsapp_service
-
 def get_service():
-    return get_whatsapp_service()
+    try:
+        return get_whatsapp_service()
+    except RuntimeError:
+        current_app.logger.error("WhatsApp service not initialized")
+        return None
 
 def handle_webhook(phone_number: str, message: str, db: Session):
     try:
+        whatsapp_service = get_service()
+        if whatsapp_service is None:
+            return "Service temporarily unavailable. Please try again later.", False
+            
+        if not whatsapp_service.client:
+            current_app.logger.error("Twilio client not properly initialized")
+            return "Service temporarily unavailable. Please try again later.", False
+            
         if not phone_number or not message:
-            current_app.logger.error("Missing required parameters")
-            return "Missing required parameters", False
+            current_app.logger.error(f"Missing required parameters: phone={phone_number}, message={message}")
+            return "Invalid request format. Please try again.", False
+            
+        # Clean up phone number and validate format
+        phone_number = phone_number.replace("whatsapp:", "").strip()
+        if not phone_number.startswith("+"):
+            phone_number = "+" + phone_number
+            
+        if not phone_number[1:].isdigit() or len(phone_number) < 10:
+            current_app.logger.error(f"Invalid phone number format: {phone_number}")
+            return "Invalid phone number format. Please try again.", False
+            
+        # Check if this is the system number
+        system_number = os.getenv("TWILIO_PHONE_NUMBER", "whatsapp:+14155238886").replace("whatsapp:", "")
+        if phone_number == system_number:
+            current_app.logger.error(f"Received message from system number: {phone_number}")
+            return "Cannot process messages from the system number.", False
+            
+        current_app.logger.info(f"Processing webhook for {phone_number}: {message}")
+        
+        # Process the message
+        response, success = whatsapp_service.handle_message(phone_number, message)
+        if not success:
+            current_app.logger.error(f"Failed to process message from {phone_number}")
+            return "Failed to process your message. Please try again later.", False
+            
+        return response, True
             
         current_app.logger.info(f"Received webhook for {phone_number}: {message}")
         phone_number = phone_number.replace("whatsapp:", "")
