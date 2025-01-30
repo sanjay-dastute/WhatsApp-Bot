@@ -1,12 +1,25 @@
 # Author: SANJAY KR
 from .. import db
 from sqlalchemy.orm import relationship
+from sqlalchemy import event
 from datetime import datetime
+
+class Family(db.Model):
+    __tablename__ = "family"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(100), nullable=False)
+    samaj_id = db.Column(db.Integer, db.ForeignKey("samaj.id", ondelete="CASCADE"), nullable=False)
+    head_of_family_id = db.Column(db.Integer, db.ForeignKey("member.id", ondelete="SET NULL"), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    members = relationship("Member", back_populates="family", foreign_keys="Member.family_id")
+    samaj = relationship("Samaj", back_populates="families")
 
 class Samaj(db.Model):
     __tablename__ = "samaj"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    families = relationship("Family", back_populates="samaj", cascade="all, delete-orphan")
     members = relationship("Member", back_populates="samaj", cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -16,6 +29,8 @@ class Member(db.Model):
     __tablename__ = "member"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     samaj_id = db.Column(db.Integer, db.ForeignKey("samaj.id", ondelete="CASCADE"), nullable=False)
+    family_id = db.Column(db.Integer, db.ForeignKey("family.id", ondelete="CASCADE"), nullable=False)
+    is_family_head = db.Column(db.Boolean, default=False)
     name = db.Column(db.String(100), nullable=False)
     gender = db.Column(db.String(10))
     age = db.Column(db.Integer)
@@ -44,6 +59,41 @@ class Member(db.Model):
     volunteer_interests = db.Column(db.String(200))
 
     samaj = relationship("Samaj", back_populates="members")
+    family = relationship("Family", back_populates="members", foreign_keys=[family_id])
+
+    def validate_family_role(self):
+        if self.family_role == "Head" and not self.is_family_head:
+            raise ValueError("Member with Head role must be marked as family head")
+        if self.family_role == "Spouse":
+            existing_spouse = Member.query.filter(
+                Member.family_id == self.family_id,
+                Member.family_role == "Spouse",
+                Member.id != self.id
+            ).first()
+            if existing_spouse:
+                raise ValueError("Family already has a spouse member")
+        if self.family_role == "Parent":
+            existing_parents = Member.query.filter(
+                Member.family_id == self.family_id,
+                Member.family_role == "Parent",
+                Member.id != self.id
+            ).count()
+            if existing_parents >= 2:
+                raise ValueError("Family cannot have more than two parents")
 
     def __repr__(self):
         return f"<Member {self.name} of {self.samaj.name if self.samaj else 'Unknown Samaj'}>"
+
+@event.listens_for(Member, 'before_insert')
+@event.listens_for(Member, 'before_update')
+def validate_member(mapper, connection, target):
+    target.validate_family_role()
+
+@event.listens_for(Member, 'after_insert')
+def update_family_head(mapper, connection, target):
+    if target.is_family_head:
+        connection.execute(
+            Family.__table__.update().
+            where(Family.id == target.family_id).
+            values(head_of_family_id=target.id)
+        )

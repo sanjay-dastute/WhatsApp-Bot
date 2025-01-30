@@ -2,7 +2,7 @@
 import os
 from sqlalchemy.orm import Session
 from flask import current_app
-from ..models.family import Samaj, Member
+from ..models.family import Samaj, Member, Family
 from ..services.whatsapp_service import get_whatsapp_service
 from twilio.base.exceptions import TwilioRestException
 
@@ -75,20 +75,84 @@ def handle_webhook(phone_number: str, message: str, db: Session):
         if session["step"] >= 26:
             try:
                 data = session["data"]
+                family_context = session.get("family_context", {})
+                
                 samaj = db.query(Samaj).filter(Samaj.name == data["samaj"]).first()
                 if not samaj:
                     samaj = Samaj(name=data["samaj"])
                     db.add(samaj)
                     db.flush()
+                
+                family_role = data.get("family_role", "").title()
+                is_head = family_role == "Head"
+                
+                if is_head:
+                    # Create new family for family head
+                    family_name = f"{data['name']}'s Family"
+                    existing_family = db.query(Family).filter(
+                        Family.name == family_name,
+                        Family.samaj_id == samaj.id
+                    ).first()
+                    
+                    if existing_family:
+                        raise ValueError(f"A family with name '{family_name}' already exists in {data['samaj']} Samaj")
+                    
+                    family = Family(
+                        name=family_name,
+                        samaj_id=samaj.id
+                    )
+                    db.add(family)
+                    db.flush()
+                else:
+                    # Find and validate family for non-head member
+                    family_head_name = data.get("family_head")
+                    if not family_head_name:
+                        raise ValueError("Family head name is required for non-head members")
+                    
+                    existing_head = db.query(Member).join(Family).filter(
+                        Member.name == family_head_name,
+                        Member.is_family_head == True,
+                        Member.samaj_id == samaj.id
+                    ).first()
+                    
+                    if not existing_head:
+                        raise ValueError(f"Family head '{family_head_name}' not found in samaj '{data['samaj']}'")
+                    
+                    family = existing_head.family
+                    
+                    # Validate family role constraints
+                    existing_members = db.query(Member).filter(
+                        Member.family_id == family.id,
+                        Member.family_role == data["family_role"]
+                    ).all()
+                    
+                    if data["family_role"] == "Spouse" and existing_members:
+                        raise ValueError("This family already has a spouse member")
+                    elif data["family_role"] == "Parent" and len(existing_members) >= 2:
+                        raise ValueError("This family already has two parents")
+                    
+                    # Validate family role based on existing members
+                    existing_members = db.query(Member).filter(
+                        Member.family_id == family.id,
+                        Member.family_role == family_role
+                    ).all()
+                    
+                    if family_role == "Spouse" and len(existing_members) > 0:
+                        raise ValueError("A family can only have one spouse")
+                    elif family_role == "Parent" and len(existing_members) >= 2:
+                        raise ValueError("A family cannot have more than two parents")
 
+                # Create or update member record with family context
                 member = Member(
                     samaj_id=samaj.id,
+                    family_id=family.id,
+                    is_family_head=is_head,
                     name=data["name"],
                     gender=data["gender"],
                     age=int(data["age"]),
                     blood_group=data["blood_group"],
                     mobile_1=data["mobile_1"],
-                    mobile_2=data["mobile_2"],
+                    mobile_2=data.get("mobile_2"),
                     education=data["education"],
                     occupation=data["occupation"],
                     marital_status=data["marital_status"],
@@ -103,13 +167,20 @@ def handle_webhook(phone_number: str, message: str, db: Session):
                     hobbies=data["hobbies"],
                     emergency_contact=data["emergency_contact"],
                     relationship_status=data["relationship_status"],
-                    family_role=data["family_role"],
+                    family_role=family_role,
                     medical_conditions=data.get("medical_conditions"),
                     dietary_preferences=data["dietary_preferences"],
                     social_media_handles=data.get("social_media_handles"),
                     profession_category=data["profession_category"],
                     volunteer_interests=data.get("volunteer_interests")
                 )
+                
+                # Validate family role constraints
+                try:
+                    member.validate_family_role()
+                except ValueError as e:
+                    current_app.logger.error(f"Family role validation failed: {str(e)}")
+                    return str(e), False
                 db.add(member)
                 db.commit()
                 del whatsapp_service.current_sessions[phone_number]
