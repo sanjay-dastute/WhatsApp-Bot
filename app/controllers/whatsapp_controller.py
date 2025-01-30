@@ -70,21 +70,11 @@ def handle_webhook(phone_number: str, message: str, db: Session):
                 db.commit()
                 del whatsapp_service.current_sessions[phone_number]
                 current_app.logger.info(f"Successfully saved data for {phone_number}")
-                
-                try:
-                    if not whatsapp_service.send_message(phone_number, response):
-                        current_app.logger.error(f"Failed to send WhatsApp message to {phone_number}")
-                        return "Failed to send response message", False
-                    return response, True
-                except Exception as e:
-                    current_app.logger.error(f"Error sending message to {phone_number}: {str(e)}")
-                    return "Failed to send response message", False
-                    
             except Exception as e:
                 current_app.logger.error(f"Database error for {phone_number}: {str(e)}")
                 db.rollback()
                 return "An error occurred while saving your information. Please try again.", False
-                
+        
         try:
             if not whatsapp_service.send_message(phone_number, response):
                 current_app.logger.error(f"Failed to send WhatsApp message to {phone_number}")
@@ -93,6 +83,9 @@ def handle_webhook(phone_number: str, message: str, db: Session):
         except Exception as e:
             current_app.logger.error(f"Error sending message to {phone_number}: {str(e)}")
             return "Failed to send response message", False
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error processing webhook: {str(e)}")
+        return "An unexpected error occurred", False
     
     try:
         if not whatsapp_service.send_message(phone_number, response):
