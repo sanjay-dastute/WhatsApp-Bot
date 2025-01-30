@@ -17,8 +17,10 @@ def webhook():
                 "message": "Media attachments are not supported. Please send text messages only."
             }), 400
             
+        # Extract phone number from Twilio format
+        phone_number = request_data["From"].split(":")[-1].strip()
         response, success = handle_webhook(
-            phone_number=request_data["From"],
+            phone_number=phone_number,
             message=request_data["Body"],
             db=db
         )

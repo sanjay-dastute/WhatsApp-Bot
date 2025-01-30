@@ -214,9 +214,11 @@ def create_app():
             raise
     
     # Initialize WhatsApp service before routes
-    from .services.whatsapp_service import WhatsAppService
-    whatsapp_service = WhatsAppService.get_instance()
-    whatsapp_service.init_app(app)
+    from .services.whatsapp_service import WhatsAppService, get_whatsapp_service
+    
+    # Initialize service in app context
+    with app.app_context():
+        get_whatsapp_service()
     
     from .routes.whatsapp import whatsapp_bp
     from .routes.admin import admin_bp
