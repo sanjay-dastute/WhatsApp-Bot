@@ -15,11 +15,14 @@ def create_app():
     
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "your-secret-key")
+    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
     app.config["JWT_ALGORITHM"] = "HS256"
     app.config["JWT_ACCESS_TOKEN_EXPIRE_MINUTES"] = 30
     
     db.init_app(app)
+    
+    with app.app_context():
+        db.create_all()
     
     from .routes.whatsapp import whatsapp_bp
     from .routes.admin import admin_bp

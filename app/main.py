@@ -10,9 +10,6 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
     
-    # Initialize database
-    init_db()
-    
     # Register blueprints
     app.register_blueprint(whatsapp_bp, url_prefix="/api/v1")
     app.register_blueprint(admin_bp, url_prefix="/api/v1/admin")
