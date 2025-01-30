@@ -102,54 +102,12 @@ def create_app():
                     app.logger.info("Generating sample data...")
                     try:
                         from app.utils.generate_sample_data import generate_sample_data
-                        data = generate_sample_data(50)
+                        generate_sample_data(db.session, 50)
                         app.logger.info("Sample data generated successfully")
                     except Exception as e:
-                        app.logger.error(f"Error importing generate_sample_data: {str(e)}")
+                        app.logger.error(f"Error during sample data generation: {str(e)}")
+                        db.session.rollback()
                         raise
-                    
-                    for entry in data:
-                        try:
-                            samaj = Samaj(name=entry["samaj"])
-                            db.session.add(samaj)
-                            db.session.commit()
-                            
-                            member = Member(
-                                samaj_id=samaj.id,
-                                name=entry["name"],
-                                gender=entry["gender"],
-                                age=entry["age"],
-                                blood_group=entry["blood_group"],
-                                mobile_1=entry["mobile_1"],
-                                mobile_2=entry["mobile_2"],
-                                education=entry["education"],
-                                occupation=entry["occupation"],
-                                marital_status=entry["marital_status"],
-                                address=entry["address"],
-                                email=entry["email"],
-                                birth_date=entry["birth_date"],
-                                anniversary_date=entry["anniversary_date"],
-                                native_place=entry["native_place"],
-                                current_city=entry["current_city"],
-                                languages_known=entry["languages_known"],
-                                skills=entry["skills"],
-                                hobbies=entry["hobbies"],
-                                emergency_contact=entry["emergency_contact"],
-                                relationship_status=entry["relationship_status"],
-                                family_role=entry["family_role"],
-                                medical_conditions=entry["medical_conditions"],
-                                dietary_preferences=entry["dietary_preferences"],
-                                social_media_handles=entry["social_media_handles"],
-                                profession_category=entry["profession_category"],
-                                volunteer_interests=entry["volunteer_interests"]
-                            )
-                            db.session.add(member)
-                            db.session.commit()
-                            app.logger.info(f"Added member {member.name} to samaj {samaj.name}")
-                        except Exception as e:
-                            app.logger.error(f"Error during sample data generation: {str(e)}")
-                            db.session.rollback()
-                            continue
                     app.logger.info("Sample data generation completed")
                 else:
                     app.logger.info(f"Using existing data: {samaj_count} samaj records found")
@@ -160,54 +118,12 @@ def create_app():
                 app.logger.info("Generating sample data...")
                 try:
                     from app.utils.generate_sample_data import generate_sample_data
-                    data = generate_sample_data(50)
+                    generate_sample_data(db.session, 50)
                     app.logger.info("Sample data generated successfully")
                 except Exception as e:
-                    app.logger.error(f"Error importing generate_sample_data: {str(e)}")
+                    app.logger.error(f"Error during sample data generation: {str(e)}")
+                    db.session.rollback()
                     raise
-                
-                for entry in data:
-                    try:
-                        samaj = Samaj(name=entry["samaj"])
-                        db.session.add(samaj)
-                        db.session.flush()
-                        
-                        member = Member(
-                            samaj_id=samaj.id,
-                            name=entry["name"],
-                            gender=entry["gender"],
-                            age=entry["age"],
-                            blood_group=entry["blood_group"],
-                            mobile_1=entry["mobile_1"],
-                            mobile_2=entry["mobile_2"],
-                            education=entry["education"],
-                            occupation=entry["occupation"],
-                            marital_status=entry["marital_status"],
-                            address=entry["address"],
-                            email=entry["email"],
-                            birth_date=entry["birth_date"],
-                            anniversary_date=entry["anniversary_date"],
-                            native_place=entry["native_place"],
-                            current_city=entry["current_city"],
-                            languages_known=entry["languages_known"],
-                            skills=entry["skills"],
-                            hobbies=entry["hobbies"],
-                            emergency_contact=entry["emergency_contact"],
-                            relationship_status=entry["relationship_status"],
-                            family_role=entry["family_role"],
-                            medical_conditions=entry["medical_conditions"],
-                            dietary_preferences=entry["dietary_preferences"],
-                            social_media_handles=entry["social_media_handles"],
-                            profession_category=entry["profession_category"],
-                            volunteer_interests=entry["volunteer_interests"]
-                        )
-                        db.session.add(member)
-                        db.session.commit()
-                        app.logger.info(f"Added member {member.name} to samaj {samaj.name}")
-                    except Exception as e:
-                        app.logger.error(f"Error during sample data generation: {str(e)}")
-                        db.session.rollback()
-                        continue
                 app.logger.info("Sample data generation completed")
         except Exception as e:
             app.logger.error(f"Error during database initialization: {str(e)}")
