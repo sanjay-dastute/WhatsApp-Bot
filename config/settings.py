@@ -10,22 +10,22 @@ class Config:
     TESTING = False
     
     # JWT Configuration
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "development-secret-key-do-not-use-in-production")
-    JWT_ALGORITHM = "HS256"
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
+    JWT_ALGORITHM = os.environ["JWT_ALGORITHM"]
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ["JWT_ACCESS_TOKEN_EXPIRE_MINUTES"])
     
     # Database Configuration
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5432/whatsapp_bot")
+    SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
     
     # Twilio Configuration
-    TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
-    TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-    TWILIO_PHONE_NUMBER = "whatsapp:+14155238886"
+    TWILIO_ACCOUNT_SID = os.environ["TWILIO_ACCOUNT_SID"]
+    TWILIO_AUTH_TOKEN = os.environ["TWILIO_AUTH_TOKEN"]
+    TWILIO_PHONE_NUMBER = os.environ["TWILIO_PHONE_NUMBER"]
     
     # Admin Configuration
-    ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
+    ADMIN_USERNAME = os.environ["ADMIN_USERNAME"]
+    ADMIN_PASSWORD = os.environ["ADMIN_PASSWORD"]
     
     @classmethod
     def init_app(cls, app):
