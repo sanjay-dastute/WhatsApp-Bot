@@ -5,14 +5,21 @@ from ..models.family import Samaj, Member
 from ..services.whatsapp_service import WhatsAppService
 from twilio.base.exceptions import TwilioRestException
 
-whatsapp_service = WhatsAppService()
 from flask import current_app
-whatsapp_service.init_app(current_app._get_current_object())
+from ..services.whatsapp_service import get_whatsapp_service
+
+def get_service():
+    return get_whatsapp_service()
 
 def handle_webhook(phone_number: str, message: str, db: Session):
     try:
+        if not phone_number or not message:
+            current_app.logger.error("Missing required parameters")
+            return "Missing required parameters", False
+            
         current_app.logger.info(f"Received webhook for {phone_number}: {message}")
         phone_number = phone_number.replace("whatsapp:", "")
+        whatsapp_service = get_service()
         response, success = whatsapp_service.handle_message(phone_number, message)
         
         if not success:

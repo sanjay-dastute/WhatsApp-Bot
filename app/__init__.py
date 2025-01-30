@@ -213,18 +213,18 @@ def create_app():
             app.logger.error(f"Error during database initialization: {str(e)}")
             raise
     
+    # Initialize WhatsApp service before routes
+    from .services.whatsapp_service import WhatsAppService
+    whatsapp_service = WhatsAppService.get_instance()
+    whatsapp_service.init_app(app)
+    
     from .routes.whatsapp import whatsapp_bp
     from .routes.admin import admin_bp
     from .routes.auth import auth_bp
-    from .services.whatsapp_service import whatsapp_service
     
     app.register_blueprint(whatsapp_bp, url_prefix="/api/v1")
     app.register_blueprint(admin_bp, url_prefix="/api/v1/admin")
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
-    
-    # Initialize WhatsApp service
-    with app.app_context():
-        whatsapp_service.init_app(app)
     
     # Register CLI commands
     from .cli import check_db

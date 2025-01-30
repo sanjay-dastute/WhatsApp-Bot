@@ -8,10 +8,25 @@ from typing import Dict, Any, Tuple, Optional
 
 load_dotenv()
 
+_instance = None
+
+def get_whatsapp_service():
+    global _instance
+    if _instance is None:
+        raise RuntimeError("WhatsApp service not initialized")
+    return _instance
+
 class WhatsAppService:
     def __init__(self):
         self.current_sessions: Dict[str, Dict[str, Any]] = {}
         self.client = None
+        
+    @classmethod
+    def get_instance(cls):
+        global _instance
+        if _instance is None:
+            _instance = cls()
+        return _instance
         
     def init_app(self, app):
         try:
@@ -23,19 +38,30 @@ class WhatsAppService:
                 raise ValueError("Twilio credentials not properly configured")
                 
             self.client = Client(account_sid, auth_token)
+            global _instance
+            _instance = self
             app.logger.info("WhatsApp service initialized successfully")
+            return self
         except Exception as e:
             app.logger.error(f"Failed to initialize WhatsApp service: {str(e)}")
             raise
 
     def send_message(self, to: str, message: str) -> bool:
         try:
+            if not self.client:
+                current_app.logger.error("Twilio client not initialized")
+                return False
+                
             self.client.messages.create(
-                from_="whatsapp:+14155238886",
+                from_=os.getenv("TWILIO_PHONE_NUMBER", "whatsapp:+14155238886"),
                 body=message,
                 to=f"whatsapp:{to}"
             )
+            current_app.logger.info(f"Successfully sent message to {to}")
             return True
+        except TwilioRestException as e:
+            current_app.logger.error(f"Twilio API error: {str(e)}")
+            return False
         except Exception as e:
             current_app.logger.error(f"Failed to send WhatsApp message: {str(e)}")
             return False
