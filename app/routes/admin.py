@@ -7,24 +7,10 @@ from ..controllers.admin_controller import (
     export_members_csv
 )
 from ..controllers.auth_controller import verify_token
-from functools import wraps
 from io import StringIO
+from ..utils.auth import login_required
 
 admin_bp = Blueprint("admin", __name__)
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        token = request.headers.get('Authorization')
-        if not token or not token.startswith('Bearer '):
-            return jsonify({"error": "Missing token"}), 401
-        
-        username = verify_token(token.split(' ')[1])
-        if not username:
-            return jsonify({"error": "Invalid token"}), 401
-        
-        return f(*args, **kwargs)
-    return decorated_function
 
 @admin_bp.route("/members", methods=["GET"])
 @login_required
