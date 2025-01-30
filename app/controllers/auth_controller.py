@@ -35,10 +35,18 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 def verify_token(token: str) -> Optional[str]:
     try:
+        from flask import current_app
+        import jwt
+        
+        secret_key = current_app.config.get("JWT_SECRET_KEY", "development-secret-key-do-not-use-in-production")
+        algorithm = current_app.config.get("JWT_ALGORITHM", "HS256")
+        
+        current_app.logger.info(f"Verifying token with algorithm: {algorithm}")
+        
         payload = jwt.decode(
             token,
-            current_app.config["JWT_SECRET_KEY"],
-            algorithms=[current_app.config["JWT_ALGORITHM"]]
+            secret_key,
+            algorithms=[algorithm]
         )
         username = payload.get("sub")
         if not isinstance(username, str) or username is None:

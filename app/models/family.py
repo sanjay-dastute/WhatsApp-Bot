@@ -64,24 +64,93 @@ class Member(db.Model):
     family = relationship("Family", back_populates="members", foreign_keys=[family_id])
 
     def validate_family_role(self):
+        if not self.family_role:
+            raise ValueError("Family role is required")
+            
         if self.family_role == "Head" and not self.is_family_head:
             raise ValueError("Member with Head role must be marked as family head")
-        if self.family_role == "Spouse":
-            existing_spouse = Member.query.filter(
+            
+        # Check for existing family head
+        if self.is_family_head:
+            existing_head = Member.query.filter(
                 Member.family_id == self.family_id,
-                Member.family_role == "Spouse",
+                Member.is_family_head == True,
                 Member.id != self.id
             ).first()
-            if existing_spouse:
-                raise ValueError("Family already has a spouse member")
-        if self.family_role == "Parent":
-            existing_parents = Member.query.filter(
-                Member.family_id == self.family_id,
-                Member.family_role == "Parent",
-                Member.id != self.id
-            ).count()
-            if existing_parents >= 2:
-                raise ValueError("Family cannot have more than two parents")
+            if existing_head:
+                raise ValueError(f"Family already has a head member: {existing_head.name}")
+                
+        # Get all existing family members and their roles
+        existing_members = Member.query.filter(
+            Member.family_id == self.family_id,
+            Member.id != self.id
+        ).all()
+        
+        # Count roles and store member details for validation messages
+        role_counts = {}
+        role_members = {}
+        for member in existing_members:
+            role = member.family_role
+            role_counts[role] = role_counts.get(role, 0) + 1
+            if role not in role_members:
+                role_members[role] = []
+            role_members[role].append(member)
+            
+        # Validate role-specific constraints with detailed error messages
+        if self.family_role == "Spouse":
+            if role_counts.get("Spouse", 0) > 0:
+                spouse = role_members["Spouse"][0]
+                raise ValueError(
+                    f"Family already has a spouse member: {spouse.name} "
+                    f"(age: {spouse.age}, relationship: {spouse.relationship_status})"
+                )
+                
+        elif self.family_role == "Parent":
+            if role_counts.get("Parent", 0) >= 2:
+                parents = [f"{m.name} ({m.relationship_status})" for m in role_members["Parent"]]
+                raise ValueError(
+                    f"Family already has maximum parents: {', '.join(parents)}"
+                )
+                
+        elif self.family_role == "Child":
+            parent_roles = ["Head", "Spouse", "Parent"]
+            has_parent = any(role_counts.get(role, 0) > 0 for role in parent_roles)
+            if not has_parent:
+                raise ValueError(
+                    "Family must have at least one parent figure (Head/Spouse/Parent) "
+                    "to add a child"
+                )
+                
+        elif self.family_role == "Sibling":
+            if "Head" not in role_counts:
+                raise ValueError(
+                    "Family must have a head member to add a sibling. "
+                    "Please add the family head first."
+                )
+                
+        # Additional validation for age-based relationships
+        if self.age:
+            if self.family_role == "Child":
+                parent_members = []
+                for role in ["Head", "Spouse", "Parent"]:
+                    if role in role_members:
+                        parent_members.extend(role_members[role])
+                        
+                for parent in parent_members:
+                    if parent.age and parent.age <= self.age:
+                        raise ValueError(
+                            f"Child's age ({self.age}) cannot be greater than or equal to "
+                            f"parent's age ({parent.age}, {parent.name})"
+                        )
+                        
+            elif self.family_role == "Parent":
+                children = role_members.get("Child", [])
+                for child in children:
+                    if child.age and child.age >= self.age:
+                        raise ValueError(
+                            f"Parent's age ({self.age}) cannot be less than or equal to "
+                            f"child's age ({child.age}, {child.name})"
+                        )
 
     def __repr__(self):
         return f"<Member {self.name} of {self.samaj.name if self.samaj else 'Unknown Samaj'}>"

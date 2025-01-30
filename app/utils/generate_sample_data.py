@@ -58,6 +58,11 @@ def generate_sample_data(db, count=50):
     family_data = {}
     
     for samaj_name in SAMAJ_CATEGORIES[:count//5]:
+        existing_samaj = db.query(Samaj).filter_by(name=samaj_name).first()
+        if existing_samaj:
+            samaj_data[samaj_name] = existing_samaj
+            continue
+            
         samaj = Samaj(name=samaj_name)
         db.add(samaj)
         db.flush()

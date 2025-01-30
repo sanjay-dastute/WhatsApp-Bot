@@ -11,11 +11,22 @@ load_dotenv()
 db = SQLAlchemy()
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__,
+                static_folder='static',
+                template_folder='templates')
     CORS(app)
-    app.config['DEBUG'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@db:5432/whatsapp_bot')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Load all configurations first
+    app.config.update(
+        DEBUG=True,
+        SQLALCHEMY_DATABASE_URI=os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@db:5432/whatsapp_bot'),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        JWT_SECRET_KEY=os.environ.get('JWT_SECRET_KEY', 'development-secret-key-do-not-use-in-production'),
+        JWT_ALGORITHM=os.environ.get('JWT_ALGORITHM', 'HS256'),
+        JWT_ACCESS_TOKEN_EXPIRE_MINUTES=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRE_MINUTES', '30')),
+        ADMIN_USERNAME=os.environ.get('ADMIN_USERNAME', 'admin'),
+        ADMIN_PASSWORD=os.environ.get('ADMIN_PASSWORD', 'admin')
+    )
     
     # Configure logging
     import logging
@@ -41,14 +52,22 @@ def create_app():
     app.logger.info("Flask configuration loaded")
     
     # Load configuration
-    app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'development-secret-key-do-not-use-in-production')
-    app.config['JWT_ALGORITHM'] = os.environ.get('JWT_ALGORITHM', 'HS256')
-    app.config['JWT_ACCESS_TOKEN_EXPIRE_MINUTES'] = int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRE_MINUTES', '30'))
-    app.config['ADMIN_USERNAME'] = os.environ.get('ADMIN_USERNAME', 'admin')
-    app.config['ADMIN_PASSWORD'] = os.environ.get('ADMIN_PASSWORD', 'admin')
+    # JWT Configuration
+    app.config.update(
+        JWT_SECRET_KEY=os.environ.get('JWT_SECRET_KEY', 'development-secret-key-do-not-use-in-production'),
+        JWT_ALGORITHM=os.environ.get('JWT_ALGORITHM', 'HS256'),
+        JWT_ACCESS_TOKEN_EXPIRE_MINUTES=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRE_MINUTES', '30')),
+        ADMIN_USERNAME=os.environ.get('ADMIN_USERNAME', 'admin'),
+        ADMIN_PASSWORD=os.environ.get('ADMIN_PASSWORD', 'admin')
+    )
     
-    from config.settings import Config
-    Config.init_app(app)
+    # Log configuration status
+    app.logger.info(f"JWT_ALGORITHM: {app.config['JWT_ALGORITHM']}")
+    app.logger.info(f"JWT_ACCESS_TOKEN_EXPIRE_MINUTES: {app.config['JWT_ACCESS_TOKEN_EXPIRE_MINUTES']}")
+    app.logger.info(f"JWT_SECRET_KEY is set: {bool(app.config['JWT_SECRET_KEY'])}")
+    app.logger.info(f"JWT_SECRET_KEY configured: {bool(app.config.get('JWT_SECRET_KEY'))}")
+    app.logger.info(f"JWT_ALGORITHM configured: {app.config.get('JWT_ALGORITHM')}")
+    app.logger.info("Flask configuration loaded successfully")
     
     # Verify configuration loaded correctly
     app.logger.info("Verifying configuration...")
@@ -140,7 +159,7 @@ def create_app():
     from .routes.admin import admin_bp
     from .routes.auth import auth_bp
     
-    app.register_blueprint(whatsapp_bp, url_prefix="/api/v1")
+    app.register_blueprint(whatsapp_bp, url_prefix="/api/v1/whatsapp")
     app.register_blueprint(admin_bp, url_prefix="/api/v1/admin")
     app.register_blueprint(auth_bp, url_prefix="/api/v1/auth")
     

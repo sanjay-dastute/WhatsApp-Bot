@@ -1,37 +1,34 @@
-# Author: SANJAY KR
 version: '3.8'
-
 services:
   web:
     build: .
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/whatsapp_bot
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
-      JWT_SECRET_KEY: development-secret-key-do-not-use-in-production
-      JWT_ALGORITHM: HS256
-      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: 30
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD: admin
-      FLASK_APP: app.main
-      FLASK_ENV: development
-      FLASK_DEBUG: 1
-      PYTHONPATH: /app
+      - FLASK_APP=app.main:application
+      - FLASK_DEBUG=1
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/whatsapp_bot
+      - JWT_SECRET_KEY=development-secret-key-do-not-use-in-production
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin
+      - TWILIO_ACCOUNT_SID=ACfe44f5cbbed573f96f4ebe029402aeea
+      - TWILIO_PHONE_NUMBER=+18483603193
+    volumes:
+      - .:/app
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - .:/app
-    command: >
-      bash -c "
-        python scripts/init_db.py &&
-        python -m flask run --host=0.0.0.0 --port=8000
-      "
+    command: gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 app.main:application
 
   db:
     image: postgres:13
+    env_file:
+      - .env
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres

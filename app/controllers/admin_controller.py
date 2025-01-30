@@ -1,14 +1,20 @@
 # Author: SANJAY KR
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
 from ..models.family import Samaj, Member, Family
-from typing import List, Optional
+from typing import List, Optional, Dict
 import csv
 from io import StringIO
-from io import StringIO
-from typing import List, Optional
+from flask import current_app
+from app import db
 
-def get_members(db: Session, filters: dict = None) -> List[Member]:
-    query = db.query(Member).join(Family).join(Samaj)
+def get_members(db_session=None, filters: Optional[Dict] = None) -> List[Member]:
+    if db_session is None:
+        db_session = db.session
+    query = db_session.query(Member).\
+        join(Family, Member.family_id == Family.id).\
+        join(Samaj, and_(Member.samaj_id == Samaj.id, Family.samaj_id == Samaj.id)).\
+        distinct()
     
     if not filters:
         return query.all()
@@ -45,20 +51,30 @@ def get_members(db: Session, filters: dict = None) -> List[Member]:
         
     return query.all()
 
-def get_samaj_list(db: Session) -> List[Samaj]:
-    return db.query(Samaj).all()
+def get_samaj_list(db_session=None) -> List[Samaj]:
+    if db_session is None:
+        db_session = db.session
+    return db_session.query(Samaj).all()
 
-def get_family_list(db: Session, samaj_name: Optional[str] = None) -> List[Family]:
-    query = db.query(Family).join(Samaj)
+def get_family_list(db_session=None, samaj_name: Optional[str] = None) -> List[Family]:
+    if db_session is None:
+        db_session = db.session
+    query = db_session.query(Family).join(Samaj)
     if samaj_name:
         query = query.filter(Samaj.name.ilike(f"%{samaj_name}%"))
     return query.all()
 
-def get_family_members(db: Session, family_id: int) -> List[Member]:
-    return db.query(Member).filter(Member.family_id == family_id).all()
+def get_family_members(family_id: int, db_session=None) -> List[Member]:
+    if db_session is None:
+        db_session = db.session
+    return db_session.query(Member).filter(Member.family_id == family_id).all()
 
-def get_family_summary(db: Session, filters: dict = None) -> List[dict]:
-    query = db.query(Family).join(Samaj).join(Member)
+def get_family_summary(db_session=None, filters: dict = None) -> List[dict]:
+    if db_session is None:
+        db_session = db.session
+    query = db_session.query(Family).\
+        join(Samaj, Family.samaj_id == Samaj.id).\
+        join(Member, Member.family_id == Family.id)
     
     if filters:
         if filters.get("samaj_name"):
@@ -66,7 +82,7 @@ def get_family_summary(db: Session, filters: dict = None) -> List[dict]:
         if filters.get("family_name"):
             query = query.filter(Family.name.ilike(f"%{filters['family_name']}%"))
             
-    families = query.all()
+    families = query.distinct().all()
     result = []
     
     for family in families:
@@ -82,11 +98,30 @@ def get_family_summary(db: Session, filters: dict = None) -> List[dict]:
     
     return result
 
-def get_member(db: Session, member_id: int) -> Optional[Member]:
-    return db.query(Member).filter(Member.id == member_id).first()
+def get_member(member_id: int, db_session=None) -> Optional[Member]:
+    if db_session is None:
+        db_session = db.session
+    return db_session.query(Member).filter(Member.id == member_id).first()
 
-def export_members_csv(db: Session, filters: dict = None) -> tuple[str, str]:
-    members = get_members(db, filters)
+def export_members_csv(db_session, filters: Optional[Dict] = None) -> tuple[str, str]:
+    if db_session is None:
+        db_session = db.session
+    query = db_session.query(Member).\
+        join(Family, and_(Member.family_id == Family.id, Member.samaj_id == Family.samaj_id)).\
+        join(Samaj, and_(Member.samaj_id == Samaj.id, Family.samaj_id == Samaj.id)).\
+        distinct()
+    
+    if filters:
+        if filters.get("samaj_name"):
+            query = query.filter(Samaj.name.ilike(f"%{filters['samaj_name']}%"))
+        if filters.get("family_name"):
+            query = query.filter(Family.name.ilike(f"%{filters['family_name']}%"))
+        if filters.get("name"):
+            query = query.filter(Member.name.ilike(f"%{filters['name']}%"))
+        if filters.get("blood_group"):
+            query = query.filter(Member.blood_group == filters["blood_group"])
+    
+    members = query.all()
     samaj_name = filters.get("samaj_name", "all") if filters else "all"
     
     output = StringIO()
